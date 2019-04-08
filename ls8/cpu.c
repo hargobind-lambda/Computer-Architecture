@@ -1,4 +1,5 @@
 #include "cpu.h"
+#include <stdio.h>
 
 #define DATA_LEN 6
 
@@ -19,6 +20,7 @@ void cpu_load(struct cpu *cpu)
 
   int address = 0;
 
+  // load data arr into ram
   for (int i = 0; i < DATA_LEN; i++) {
     cpu->ram[address++] = data[i];
   }
@@ -40,21 +42,59 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   }
 }
 
+void cpu_ram_read(struct cpu *cpu) 
+{
+
+}
+
+void cpu_ram_write(struct cpu *cpu)
+{
+
+}
+
 /**
  * Run the CPU
  */
 void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
+  unsigned int * program_counter = &cpu->pc;
+  unsigned int current_instruction;
 
   while (running) {
     // TODO
     // 1. Get the value of the current instruction (in address PC).
+    current_instruction = cpu->ram[(*program_counter)++];
     // 2. Figure out how many operands this next instruction requires
+    // unsigned int num_ops = 
     // 3. Get the appropriate value(s) of the operands following this instruction
     // 4. switch() over it to decide on a course of action.
+    switch (current_instruction)
+    {
+      case HLT:
+        running = 0;
+        break;
+
+      case PRN:
+        unsigned int value = cpu->ram[(*program_counter)++];
+        printf("\"%u\"", value);
+        break;
+
+      case LDI:
+        /* LDI reg int */
+        // 
+        cpu->reg[(*program_counter)++] = cpu->ram[(*program_counter)++];
+        break;
+    
+      default:
+        printf("Invalid instruction: %u\n", current_instruction);
+        cpu->ram[(*program_counter)++];
+        break;
+    }
     // 5. Do whatever the instruction should do according to the spec.
     // 6. Move the PC to the next instruction.
+    // cpu->pc++
+    (*program_counter)++;
   }
 }
 
@@ -64,4 +104,8 @@ void cpu_run(struct cpu *cpu)
 void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
+  cpu->ram;
+  cpu->pc = 0;
+
+
 }
