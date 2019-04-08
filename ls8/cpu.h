@@ -9,7 +9,7 @@ struct cpu {
   // registers (array)
   unsigned char reg[8];
   // ram (array)
-  unsigned int ram[128];
+  unsigned char ram[128];
 };
 
 // ALU operations
