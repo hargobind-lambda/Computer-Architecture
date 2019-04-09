@@ -14,6 +14,15 @@ void cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value)
   cpu->ram[ram_index] = value;
 }
 
+void cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value)
+{
+  cpu->reg[reg_i] = value;
+}
+
+unsigned char cpu_register_read(struct cpu *cpu, unsigned int reg_i)
+{
+  return cpu->reg[reg_i];
+}
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
@@ -47,8 +56,8 @@ void cpu_load(struct cpu *cpu, char * filepath)
     }
     // putchar(c);
     
-    // cpu_ram_write(cpu, address, val);
-    cpu->ram[address] = val;
+    cpu_ram_write(cpu, address, val);
+    // cpu->ram[address] = val;
     address++;
     // ramp++;
   }
@@ -102,7 +111,7 @@ void cpu_run(struct cpu *cpu)
 
     // TODO
     // 1. Get the value of the current instruction (in address PC).
-    current_instruction = cpu->ram[cpu->pc++];
+    current_instruction = cpu_ram_read(cpu, cpu->pc++);
     // 2. Figure out how many operands this next instruction requires
     // unsigned int num_ops =
     // 3. Get the appropriate value(s) of the operands following this instruction
@@ -116,15 +125,16 @@ void cpu_run(struct cpu *cpu)
 
     case PRN:
       // unsigned int value = cpu->ram[cpu->pc++];
-      printf("reg: %u ", cpu->ram[cpu->pc]);
-      printf("\"%u\"", cpu->reg[cpu->ram[cpu->pc]]);
+      printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
+      printf("\"%u\"", cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc)));
       cpu->pc++;
       break;
 
     case LDI:
       /* LDI reg int */
-      printf("load %u into reg %u\n", cpu->ram[cpu->pc + 1], cpu->ram[cpu->pc]);
-      cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
+      printf("load %u into reg %u\n", cpu_ram_read(cpu, cpu->pc+1), cpu_ram_read(cpu, cpu->pc));
+      cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
+      // cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
       cpu->pc += 2;
       break;
 
@@ -132,7 +142,7 @@ void cpu_run(struct cpu *cpu)
       // unsigned char regA, regB;
       // unsigned char regA = cpu_ram_read(cpu, cpu->pc++);
       // unsigned char regB = cpu_ram_read(cpu, cpu->pc++);
-      alu(cpu, MUL, cpu->ram[cpu->pc], cpu->ram[cpu->pc+1]);
+      alu(cpu, MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
       cpu->pc += 2;
 
     default:
