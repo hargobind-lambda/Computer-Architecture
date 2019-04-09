@@ -8,8 +8,13 @@ int main(int argc, char ** argv)
 {
   struct cpu cpu;
 
+  if (argv[1] == NULL) {
+    printf("ERROR: No file provided\n");
+    return 1;
+  }
+
   cpu_init(&cpu);
-  cpu_load(&cpu);
+  cpu_load(&cpu, argv[1]);
   cpu_run(&cpu);
 
   return 0;
