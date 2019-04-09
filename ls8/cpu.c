@@ -19,48 +19,61 @@ void cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value)
  */
 void cpu_load(struct cpu *cpu, char * filepath)
 {
-  char data[DATA_LEN] = {
-      // From print8.ls8
-      0b10000010, // LDI R0,8
-      0b00000000,
-      0b00001000,
-      0b01000111, // PRN R0
-      0b00000011,
-      0b00000001 // HLT
-  };
+  // char data[DATA_LEN] = {
+  //     // From print8.ls8
+  //     0b10000010, // LDI R0,8
+  //     0b00000000,
+  //     0b00001000,
+  //     0b01000111, // PRN R0
+  //     0b00000011,
+  //     0b00000001 // HLT
+  // };
 
   int address = 0;
 
-  // load data arr into ram
-  printf("Loading data into ram: ");
-  for (int i = 0; i < DATA_LEN; i++)
-  {
-    if (i % DATA_LEN == 0)
-    {
-      printf(".");
-    }
-    cpu->ram[address++] = data[i];
-  }
-  printf("done\n");
+  // // load data arr into ram
+  // printf("Loading data into ram: ");
+  // for (int i = 0; i < DATA_LEN; i++)
+  // {
+  //   if (i % DATA_LEN == 0)
+  //   {
+  //     printf(".");
+  //   }
+  //   cpu->ram[address++] = data[i];
+  // }
+  // printf("done\n");
 
   // TODO: Replace this with something less hard-coded
 
-  char **testfile = "./examples/print8.ls8";
+  char *testfile = "./examples/print8.ls8";
   FILE *fp = fopen(testfile, "r");
+
   if (!fp)
   {
     perror("File opening failed");
-    // return EXIT_FAILURE;
+    // return 2;
   }
 
+  char buf[1024];
   // read file loop
-  unsigned char c;
-  unsigned char *ramp = cpu->ram;
-  while ((c = fgetc(fp)) != EOF)
+  unsigned char *c;
+  // unsigned char *ramp = cpu->ram;
+  while ((c = fgets(buf, 1024, fp)) != NULL)
   {
-    *ramp = c;
-    putchar(c);
-    ramp++;
+    char *endptr;
+    // *ramp = c;
+
+    unsigned char val = strtoul(buf, &endptr, 2);
+
+    if (buf == endptr)
+    {
+      continue;
+    }
+    // putchar(c);
+    
+    cpu_ram_write(cpu, address, val);
+    address++;
+    // ramp++;
   }
 
   if (ferror(fp))

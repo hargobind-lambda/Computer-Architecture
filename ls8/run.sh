@@ -1,1 +1,1 @@
-make clean; clear; make && ./ls8
+make clean; clear; make && ./ls8 examples/print.ls8
