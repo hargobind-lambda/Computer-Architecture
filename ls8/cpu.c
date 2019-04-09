@@ -19,33 +19,7 @@ void cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value)
  */
 void cpu_load(struct cpu *cpu, char * filepath)
 {
-  // char data[DATA_LEN] = {
-  //     // From print8.ls8
-  //     0b10000010, // LDI R0,8
-  //     0b00000000,
-  //     0b00001000,
-  //     0b01000111, // PRN R0
-  //     0b00000011,
-  //     0b00000001 // HLT
-  // };
-
   int address = 0;
-
-  // // load data arr into ram
-  // printf("Loading data into ram: ");
-  // for (int i = 0; i < DATA_LEN; i++)
-  // {
-  //   if (i % DATA_LEN == 0)
-  //   {
-  //     printf(".");
-  //   }
-  //   cpu->ram[address++] = data[i];
-  // }
-  // printf("done\n");
-
-  // TODO: Replace this with something less hard-coded
-
-  // char *testfile = "./examples/print8.ls8";
   FILE *fp = fopen(filepath, "r");
 
   if (!fp)
@@ -56,9 +30,9 @@ void cpu_load(struct cpu *cpu, char * filepath)
 
   char buf[1024];
   // read file loop
-  char *c;
+  // char *c;
   // unsigned char *ramp = cpu->ram;
-  while ((c = fgets(buf, 1024, fp)) != NULL)
+  while (fgets(buf, 1024, fp) != NULL)
   {
     char *endptr;
     // *ramp = c;
@@ -103,6 +77,15 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   }
 }
 
+void cpu_print_state(struct cpu *cpu)
+{
+  printf("\npc %03u op: %03u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
+  for (int i=0; i <8; i++) {
+    printf("%02x ", cpu->reg[i]);
+  }
+  printf("]\n");
+}
+
 /**
  * Run the CPU
  */
@@ -111,14 +94,11 @@ void cpu_run(struct cpu *cpu)
   int running = 1; // True until we get a HLT instruction
   // unsigned int * program_counter = &cpu->pc;
   unsigned char current_instruction;
+  unsigned char reg_0, reg_1, reg_2, val;
 
   while (running)
   {
-  printf("\npc %03u, registers: [ ", cpu->pc);
-  for (int i=0; i <8; i++) {
-    printf("%02u ", cpu->reg[i]);
-  }
-  printf("]\n");
+    cpu_print_state(cpu);
 
     // TODO
     // 1. Get the value of the current instruction (in address PC).
@@ -136,14 +116,15 @@ void cpu_run(struct cpu *cpu)
 
     case PRN:
       // unsigned int value = cpu->ram[cpu->pc++];
-      printf("\"%u\"", cpu->reg[cpu->pc]);
+      printf("reg: %u ", cpu->ram[cpu->pc]);
+      printf("\"%u\"", cpu->reg[cpu->ram[cpu->pc]]);
       cpu->pc++;
       break;
 
     case LDI:
       /* LDI reg int */
-      printf("load %u into reg %u\n", cpu->ram[cpu->pc + 1], cpu->reg[cpu->pc]);
-      cpu->reg[cpu->pc] = cpu->ram[cpu->pc + 1];
+      printf("load %u into reg %u\n", cpu->ram[cpu->pc + 1], cpu->ram[cpu->pc]);
+      cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
       cpu->pc += 2;
       break;
 
