@@ -4,9 +4,9 @@
 
 #define DATA_LEN 6
 
-unsigned char cpu_ram_read(struct cpu *cpu)
+unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index)
 {
-  return cpu->ram[cpu->pc++];
+  return cpu->ram[ram_index];
 }
 
 void cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value)
@@ -45,8 +45,8 @@ void cpu_load(struct cpu *cpu, char * filepath)
 
   // TODO: Replace this with something less hard-coded
 
-  char *testfile = "./examples/print8.ls8";
-  FILE *fp = fopen(testfile, "r");
+  // char *testfile = "./examples/print8.ls8";
+  FILE *fp = fopen(filepath, "r");
 
   if (!fp)
   {
@@ -56,7 +56,7 @@ void cpu_load(struct cpu *cpu, char * filepath)
 
   char buf[1024];
   // read file loop
-  unsigned char *c;
+  char *c;
   // unsigned char *ramp = cpu->ram;
   while ((c = fgets(buf, 1024, fp)) != NULL)
   {
@@ -65,13 +65,16 @@ void cpu_load(struct cpu *cpu, char * filepath)
 
     unsigned char val = strtoul(buf, &endptr, 2);
 
+    printf("line: %u, loading ram: %04u\n", address, val);
+
     if (buf == endptr)
     {
       continue;
     }
     // putchar(c);
     
-    cpu_ram_write(cpu, address, val);
+    // cpu_ram_write(cpu, address, val);
+    cpu->ram[address] = val;
     address++;
     // ramp++;
   }
@@ -92,7 +95,8 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op)
   {
   case ALU_MUL:
-    // TODO
+    // unsigned int product = cpu->reg[regA] * cpu->reg[regB];
+    cpu->reg[regA] = cpu->reg[regA] * cpu->reg[regB];
     break;
 
     // TODO: implement more ALU ops
@@ -110,6 +114,12 @@ void cpu_run(struct cpu *cpu)
 
   while (running)
   {
+  printf("\npc %03u, registers: [ ", cpu->pc);
+  for (int i=0; i <8; i++) {
+    printf("%02u ", cpu->reg[i]);
+  }
+  printf("]\n");
+
     // TODO
     // 1. Get the value of the current instruction (in address PC).
     current_instruction = cpu->ram[cpu->pc++];
@@ -121,18 +131,28 @@ void cpu_run(struct cpu *cpu)
     {
     case HLT:
       running = 0;
+      printf("END PROGRAM\n");
       break;
 
     case PRN:
       // unsigned int value = cpu->ram[cpu->pc++];
-      printf("\"%u\"", cpu->ram[cpu->pc++]);
+      printf("\"%u\"", cpu->reg[cpu->pc]);
+      cpu->pc++;
       break;
 
     case LDI:
       /* LDI reg int */
-      cpu->reg[cpu->pc + 1] = cpu->ram[cpu->pc + 2];
+      printf("load %u into reg %u\n", cpu->ram[cpu->pc + 1], cpu->reg[cpu->pc]);
+      cpu->reg[cpu->pc] = cpu->ram[cpu->pc + 1];
       cpu->pc += 2;
       break;
+
+    case MUL:
+      // unsigned char regA, regB;
+      // unsigned char regA = cpu_ram_read(cpu, cpu->pc++);
+      // unsigned char regB = cpu_ram_read(cpu, cpu->pc++);
+      alu(cpu, MUL, cpu->ram[cpu->pc], cpu->ram[cpu->pc+1]);
+      cpu->pc += 2;
 
     default:
       printf("Invalid instruction: %u\n", current_instruction);
@@ -151,6 +171,6 @@ void cpu_run(struct cpu *cpu)
 void cpu_init(struct cpu *cpu)
 {
   // TODO: Initialize the PC and other special registers
-  cpu->ram;
+  // cpu->ram;
   cpu->pc = 0;
 }
