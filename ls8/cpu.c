@@ -9,7 +9,7 @@ void          cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned ch
 unsigned char cpu_register_read(struct cpu *cpu, unsigned int reg_i);
 void          cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value);
 unsigned char cpu_pop_stack(struct cpu *cpu) ;
-void          cpu_push_stack(struct cpu *cpu, unsigned char value);
+void          cpu_push_stack(struct cpu *cpu);
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
@@ -151,15 +151,15 @@ void cpu_run(struct cpu *cpu)
     
     case POP:
       val = cpu_pop_stack(cpu);
-      cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), val);
+      // cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), val);
       printf("popping %u off the stack into register %u\n", val, cpu_ram_read(cpu, cpu->pc));
       cpu->pc += 1;
       break;
 
     case PUSH:
-      val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
-      cpu_push_stack(cpu, val);
-      printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
+      // val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
+      cpu_push_stack(cpu);
+      // printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
       cpu->pc += 1;
       break;
 
@@ -209,17 +209,20 @@ void cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value
   cpu->reg[reg_i] = value;
 }
 
-void cpu_push_stack(struct cpu *cpu, unsigned char value) 
+void cpu_push_stack(struct cpu *cpu)
 {
+  unsigned char val;
+  val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
   if (cpu->sp >= cpu->PROGRAM_SIZE) {
     cpu->sp--; // move to next empty stack location
-    cpu_ram_write(cpu, cpu->sp, value);
+    cpu_ram_write(cpu, cpu->sp, val);
   }
 }
 
 unsigned char cpu_pop_stack(struct cpu *cpu) 
 {
   unsigned char popped_value = cpu_ram_read(cpu, cpu->sp);
+  cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), popped_value);
   // checks so we can't pop past the sp start pos
   if (cpu->sp <= SP_START) {
     cpu->sp++; // move sp to previous value on stack
