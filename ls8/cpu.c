@@ -76,11 +76,14 @@ void cpu_load(struct cpu *cpu, char * filepath)
  */
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB)
 {
+  unsigned char result = 0;
   switch (op)
   {
   case ALU_MUL:
     // unsigned int product = cpu->reg[regA] * cpu->reg[regB];
-    cpu->reg[regA] = cpu->reg[regA] * cpu->reg[regB];
+    printf("multipling %02u and %02u \n", cpu_register_read(cpu, regA), cpu_register_read(cpu, regA));
+    result = cpu_register_read(cpu, regA) * cpu_register_read(cpu, regB);
+    cpu_register_write(cpu, regA, result);
     break;
 
     // TODO: implement more ALU ops
@@ -91,7 +94,7 @@ void cpu_print_state(struct cpu *cpu)
 {
   printf("\npc->%03u op: %03u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
   for (int i=0; i <8; i++) {
-    printf("%02x ", cpu->reg[i]);
+    printf("%02u ", cpu->reg[i]);
   }
   printf("]\n");
 }
@@ -155,6 +158,7 @@ void cpu_run(struct cpu *cpu)
       // unsigned char regB = cpu_ram_read(cpu, cpu->pc++);
       alu(cpu, MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
       cpu->pc += 2;
+      break;
 
     default:
       printf("Invalid instruction: %u\n", current_instruction);
