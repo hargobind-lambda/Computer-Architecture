@@ -2,13 +2,22 @@
 #define _CPU_H_
 
 // Holds all information about the CPU
+
+// cpu constants
+#define MEM_SIZE 256
+#define SP_START 256 - 12
+
 struct cpu {
   // PC
   unsigned int pc;
+  // Stack pointer
+  unsigned int sp;
   // registers (array)
   unsigned char reg[8];
   // ram (array)
-  unsigned char ram[256];
+  unsigned char ram[MEM_SIZE];
+  unsigned char PROGRAM_SIZE;
+
 };
 
 // Instructions
@@ -20,6 +29,8 @@ struct cpu {
 #define HLT  0b00000001
 #define PRN  0b01000111
 #define MUL  0b10100010
+#define PUSH 0b01000101
+#define POP  0b01000110 
 // TODO: more instructions here. These can be used in cpu_run().
 
 
