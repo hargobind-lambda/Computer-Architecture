@@ -69,7 +69,6 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op)
   {
   case ALU_MUL:
-    // unsigned int product = cpu->reg[regA] * cpu->reg[regB];
     printf("multipling %02u and %02u \n", 
       cpu_register_read(cpu, regA), 
       cpu_register_read(cpu, regA));
@@ -98,7 +97,6 @@ void cpu_print_state(struct cpu *cpu)
 void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
-  // unsigned int * program_counter = &cpu->pc;
   unsigned char current_instruction;
   unsigned int num_err = 0;
   unsigned char reg_0, reg_1, reg_2, val;
@@ -147,10 +145,7 @@ void cpu_run(struct cpu *cpu)
       break;
 
     case MUL:
-      // unsigned char regA, regB;
-      // unsigned char regA = cpu_ram_read(cpu, cpu->pc++);
-      // unsigned char regB = cpu_ram_read(cpu, cpu->pc++);
-      alu(cpu, MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
+      alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
       cpu->pc += 2;
       break;
     
