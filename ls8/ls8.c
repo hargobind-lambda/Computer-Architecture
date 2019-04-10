@@ -7,8 +7,8 @@
 int main(int argc, char ** argv)
 {
   struct cpu cpu;
-
-  if (argv[1] == NULL) {
+  
+  if (argc < 2 && argv[1] == NULL) {
     printf("ERROR: No file provided\n");
     return 1;
   }
