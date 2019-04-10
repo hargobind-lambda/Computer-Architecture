@@ -8,12 +8,11 @@
 // cpu constants
 #define MEM_SIZE 256
 #define SP_START 256 - 12
-
 struct cpu {
   // PC
   unsigned int pc;
   // Stack pointer
-  unsigned int sp;
+  // unsigned int sp;
   // registers (array)
   unsigned char reg[8];
   // ram (array)

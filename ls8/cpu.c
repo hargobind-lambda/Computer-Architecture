@@ -6,35 +6,34 @@
 
 void handle_LDI(struct cpu *cpu)
 {
-      /* LDI reg int */
-      printf("load %u into reg %u\n", 
-        cpu_ram_read(cpu, cpu->pc+1), 
-        cpu_ram_read(cpu, cpu->pc));
+  /* LDI reg int */
+  printf("load %u into reg %u\n",
+         cpu_ram_read(cpu, cpu->pc + 1),
+         cpu_ram_read(cpu, cpu->pc));
 
-      cpu_register_write(cpu, 
-        cpu_ram_read(cpu, cpu->pc), 
-        cpu_ram_read(cpu, cpu->pc+1));
-      // cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
-      cpu->pc += 2;
+  cpu_register_write(cpu,
+                     cpu_ram_read(cpu, cpu->pc),
+                     cpu_ram_read(cpu, cpu->pc + 1));
+  // cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
+  cpu->pc += 2;
 }
 
 void handle_MUL(struct cpu *cpu)
 {
-      alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
-      cpu->pc += 2;
+  alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
+  cpu->pc += 2;
 }
 
-void handle_HLT(int * running)
+void handle_HLT(int *running)
 {
-      *running = 0;
-      printf("END PROGRAM\n");
+  *running = 0;
+  printf("END PROGRAM\n");
 }
-
 
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
-void cpu_load(struct cpu *cpu, char * filepath)
+void cpu_load(struct cpu *cpu, char *filepath)
 {
   int address = 0;
   FILE *fp = fopen(filepath, "r");
@@ -56,14 +55,14 @@ void cpu_load(struct cpu *cpu, char * filepath)
 
     unsigned char val = strtoul(buf, &endptr, 2);
 
-    printf("line: %u, loading ram: %04u\n", address, val);
+    printf("line: %_2u, loading ram: %_4u\n", address, val);
 
     if (buf == endptr)
     {
       continue;
     }
     // putchar(c);
-    
+
     cpu_ram_write(cpu, address++, val);
     // cpu->ram[address] = val;
     // address++;
@@ -90,24 +89,23 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op)
   {
   case ALU_MUL:
-    printf("multipling %02u and %02u \n", 
-      cpu_register_read(cpu, regA), 
-      cpu_register_read(cpu, regA));
+    printf("multipling %02u and %02u \n",
+           cpu_register_read(cpu, regA),
+           cpu_register_read(cpu, regA));
 
-    result =    cpu_register_read(cpu, regA) 
-              * cpu_register_read(cpu, regB);
+    result = cpu_register_read(cpu, regA) * cpu_register_read(cpu, regB);
     cpu_register_write(cpu, regA, result);
     break;
     // TODO: implement more ALU ops
-
   }
 }
 
 void cpu_print_state(struct cpu *cpu)
 {
-  printf("\ncpu->pc: 0x%02x op: %03u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
-  for (int i=0; i <8; i++) {
-    printf("%u ", cpu->reg[i]);
+  printf("\ncpu->pc: 0x%02x op: %_3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
+  for (int i = 0; i < 8; i++)
+  {
+    printf("%3u ", cpu->reg[i]);
   }
   printf("]\n");
 }
@@ -128,7 +126,8 @@ void cpu_run(struct cpu *cpu)
 #ifdef DEBUG
     cpu_print_state(cpu);
 #endif
-    if (num_err > 5) {
+    if (num_err > 5)
+    {
       printf("too many bad instructions: %u. Ending emulation\n", num_err);
       break;
     }
@@ -157,21 +156,17 @@ void cpu_run(struct cpu *cpu)
     case MUL:
       handle_MUL(cpu);
       break;
-    
+
     case POP:
       val = cpu_pop_stack(cpu);
       // cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), val);
-      printf("popping %u off the stack into register %u\n", val, cpu_ram_read(cpu, cpu->pc));
-      cpu->pc += 1;
       break;
 
     case PUSH:
       // val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
       cpu_push_stack(cpu);
       // printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
-      cpu->pc += 1;
       break;
-
 
     default:
       printf("Invalid instruction: %u\n", current_instruction);
@@ -193,8 +188,8 @@ void cpu_init(struct cpu *cpu)
   // TODO: Initialize the PC and other special registers
   // cpu->ram;
   cpu->pc = 0;
-  cpu->reg[7] = MEM_SIZE - 12;
-  cpu->sp = MEM_SIZE - 12; // SP_START;
+  cpu->reg[7] = MEM_SIZE - 12; // this is where the stack pointer is supposed to live
+  cpu->reg[7] = MEM_SIZE - 12; // SP_START;
 }
 
 // helper functions
@@ -218,36 +213,39 @@ void cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value
   cpu->reg[reg_i] = value;
 }
 
-
-
-
 // operation handlers
 void handle_PRN(struct cpu *cpu)
 {
-      // unsigned int value = cpu->ram[cpu->pc++];
-      printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
-      printf("\"%u\"", cpu_register_read(cpu, 
-                        cpu_ram_read(cpu, cpu->pc)));
-      cpu->pc++;
+  // unsigned int value = cpu->ram[cpu->pc++];
+  printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
+  printf("\"%u\"", cpu_register_read(cpu,
+                                     cpu_ram_read(cpu, cpu->pc)));
+  cpu->pc++;
 }
 
 void cpu_push_stack(struct cpu *cpu)
 {
   unsigned char val;
   val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
-  if (cpu->sp >= cpu->PROGRAM_SIZE) {
-    cpu->sp--; // move to next empty stack location
-    cpu_ram_write(cpu, cpu->sp, val);
+  if (cpu->reg[7] >= cpu->PROGRAM_SIZE)
+  {
+    cpu->reg[7]--; // move to next empty stack location
+    cpu_ram_write(cpu, cpu->reg[7], val);
   }
+
+  cpu->pc += 1;
 }
 
-unsigned char cpu_pop_stack(struct cpu *cpu) 
+unsigned char cpu_pop_stack(struct cpu *cpu)
 {
-  unsigned char popped_value = cpu_ram_read(cpu, cpu->sp);
+  unsigned char popped_value = cpu_ram_read(cpu, cpu->reg[7]);
   cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), popped_value);
   // checks so we can't pop past the sp start pos
-  if (cpu->sp <= SP_START) {
-    cpu->sp++; // move sp to previous value on stack
+  if (cpu->reg[7] <= SP_START)
+  {
+    cpu->reg[7]++; // move sp to previous value on stack
   }
+  printf("popping %u off the stack into register %u\n", popped_value, cpu_ram_read(cpu, cpu->pc));
+  cpu->pc += 1;
   return popped_value;
 }
