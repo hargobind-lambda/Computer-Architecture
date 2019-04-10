@@ -3,6 +3,8 @@
 
 // Holds all information about the CPU
 
+#define DEBUG
+
 // cpu constants
 #define MEM_SIZE 256
 #define SP_START 256 - 12
@@ -97,4 +99,18 @@ extern void cpu_load(struct cpu *cpu, char * filepath);
 extern void cpu_init(struct cpu *cpu);
 extern void cpu_run(struct cpu *cpu);
 
+
+void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB);
+
+// helper functions
+unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index);
+void          cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value);
+unsigned char cpu_register_read(struct cpu *cpu, unsigned int reg_i);
+void          cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value);
+
+
+// operation handlers
+unsigned char cpu_pop_stack(struct cpu *cpu) ;
+void          cpu_push_stack(struct cpu *cpu);
+void handle_PRN(struct cpu *cpu);
 #endif

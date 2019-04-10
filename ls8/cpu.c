@@ -4,12 +4,33 @@
 
 #define DATA_LEN 6
 
-unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index);
-void          cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value);
-unsigned char cpu_register_read(struct cpu *cpu, unsigned int reg_i);
-void          cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value);
-unsigned char cpu_pop_stack(struct cpu *cpu) ;
-void          cpu_push_stack(struct cpu *cpu);
+void handle_LDI(struct cpu *cpu)
+{
+      /* LDI reg int */
+      printf("load %u into reg %u\n", 
+        cpu_ram_read(cpu, cpu->pc+1), 
+        cpu_ram_read(cpu, cpu->pc));
+
+      cpu_register_write(cpu, 
+        cpu_ram_read(cpu, cpu->pc), 
+        cpu_ram_read(cpu, cpu->pc+1));
+      // cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
+      cpu->pc += 2;
+}
+
+void handle_MUL(struct cpu *cpu)
+{
+      alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
+      cpu->pc += 2;
+}
+
+void handle_HLT(int * running)
+{
+      *running = 0;
+      printf("END PROGRAM\n");
+}
+
+
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
@@ -103,7 +124,10 @@ void cpu_run(struct cpu *cpu)
 
   while (running)
   {
+
+#ifdef DEBUG
     cpu_print_state(cpu);
+#endif
     if (num_err > 5) {
       printf("too many bad instructions: %u. Ending emulation\n", num_err);
       break;
@@ -119,34 +143,19 @@ void cpu_run(struct cpu *cpu)
     switch (current_instruction)
     {
     case HLT:
-      running = 0;
-      printf("END PROGRAM\n");
+      handle_HLT(&running);
       break;
 
     case PRN:
-      // unsigned int value = cpu->ram[cpu->pc++];
-      printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
-      printf("\"%u\"", cpu_register_read(cpu, 
-                        cpu_ram_read(cpu, cpu->pc)));
-      cpu->pc++;
+      handle_PRN(cpu);
       break;
 
     case LDI:
-      /* LDI reg int */
-      printf("load %u into reg %u\n", 
-        cpu_ram_read(cpu, cpu->pc+1), 
-        cpu_ram_read(cpu, cpu->pc));
-
-      cpu_register_write(cpu, 
-        cpu_ram_read(cpu, cpu->pc), 
-        cpu_ram_read(cpu, cpu->pc+1));
-      // cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
-      cpu->pc += 2;
+      handle_LDI(cpu);
       break;
 
     case MUL:
-      alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc+1));
-      cpu->pc += 2;
+      handle_MUL(cpu);
       break;
     
     case POP:
@@ -188,7 +197,7 @@ void cpu_init(struct cpu *cpu)
   cpu->sp = MEM_SIZE - 12; // SP_START;
 }
 
-
+// helper functions
 unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index)
 {
   return cpu->ram[ram_index];
@@ -207,6 +216,19 @@ unsigned char cpu_register_read(struct cpu *cpu, unsigned int reg_i)
 void cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value)
 {
   cpu->reg[reg_i] = value;
+}
+
+
+
+
+// operation handlers
+void handle_PRN(struct cpu *cpu)
+{
+      // unsigned int value = cpu->ram[cpu->pc++];
+      printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
+      printf("\"%u\"", cpu_register_read(cpu, 
+                        cpu_ram_read(cpu, cpu->pc)));
+      cpu->pc++;
 }
 
 void cpu_push_stack(struct cpu *cpu)
