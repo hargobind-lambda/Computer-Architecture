@@ -3,11 +3,11 @@
 
 // Holds all information about the CPU
 
-// #define DEBUG
+#define DEBUG
 
 // cpu constants
 #define MEM_SIZE 256
-#define SP_START 256 - 12
+#define SP_START 0xF4
 struct cpu {
   // PC
   unsigned int pc;
@@ -15,6 +15,7 @@ struct cpu {
   // unsigned int sp;
   // registers (array)
   unsigned char reg[8];
+  unsigned char sp;
   // ram (array)
   unsigned char ram[MEM_SIZE];
   unsigned char PROGRAM_SIZE;
@@ -25,6 +26,9 @@ struct cpu {
 
 // These use binary literals. If these aren't available with your compiler, hex
 // literals should be used.
+#define ALU_MASK   0b00100000
+#define PC_MASK    0b00010000
+#define OP_ID_MASK 0b00001111
 
 #define LDI  0b10000010
 #define HLT  0b00000001
@@ -73,8 +77,8 @@ struct cpu {
 // ALU operations
 
 enum alu_op {
-  ALU_MUL
-  // ALU_ADD,
+  ALU_MUL,
+  ALU_ADD
   // ALU_SUB,
   // ALU_DIV,
   // ALU_MOD,
@@ -102,6 +106,7 @@ extern void cpu_run(struct cpu *cpu);
 void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB);
 
 // helper functions
+unsigned char cpu_ram_pc(struct cpu *cpu);
 unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index);
 void          cpu_ram_write(struct cpu *cpu, unsigned int ram_index, unsigned char value);
 unsigned char cpu_register_read(struct cpu *cpu, unsigned int reg_i);
@@ -110,8 +115,14 @@ void          cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned c
 
 // operation handlers
 unsigned char cpu_pop_stack(struct cpu *cpu) ;
-void          cpu_push_stack(struct cpu *cpu);
-void handle_PRN(struct cpu *cpu);
+void          cpu_push_stack(struct cpu *cpu, unsigned char value);
+void          handle_PRN(struct cpu *cpu);
+void          handle_LDI(struct cpu *cpu);
+void          handle_MUL(struct cpu *cpu);
+void          handle_HLT(int *running);
+void          handle_PUSH(struct cpu *cpu);
+void          handle_POP(struct cpu *cpu);
+
 
 // building branch tree
 

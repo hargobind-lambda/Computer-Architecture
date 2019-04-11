@@ -11,19 +11,25 @@ void handle_LDI(struct cpu *cpu)
   printf("load %u into reg %u\n",
          cpu_ram_read(cpu, cpu->pc + 1),
          cpu_ram_read(cpu, cpu->pc));
-#endif 
+#endif
 
   cpu_register_write(cpu,
                      cpu_ram_read(cpu, cpu->pc),
                      cpu_ram_read(cpu, cpu->pc + 1));
   // cpu->reg[cpu->ram[cpu->pc]] = cpu->ram[cpu->pc + 1];
-  cpu->pc += 2;
+  // cpu->pc += cpu_ram_read(cpu, cpu->pc-1) >> 6;
+  // cpu->pc += 2;
 }
 
 void handle_MUL(struct cpu *cpu)
 {
   alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
-  cpu->pc += 2;
+  // cpu->pc += cpu_ram_read(cpu, cpu->pc-1) >> 6;
+}
+
+void handle_ADD(struct cpu *cpu)
+{
+  alu(cpu, ALU_ADD, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
 }
 
 void handle_HLT(int *running)
@@ -34,6 +40,21 @@ void handle_HLT(int *running)
 #endif
 }
 
+void handle_CALL(struct cpu *cpu)
+{
+  // push next instruction onto stack
+  cpu_push_stack(cpu, cpu_ram_read(cpu, cpu->pc+1));
+
+  // move pc to subroutine address
+  cpu->pc = cpu_register_read(cpu, cpu_ram_pc(cpu));
+
+}
+
+void handle_RET(struct cpu *cpu)
+{
+  // move pc to return address in stack
+  cpu->pc = cpu_pop_stack(cpu);
+}
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
  */
@@ -59,7 +80,7 @@ void cpu_load(struct cpu *cpu, char *filepath)
 
     unsigned char val = strtoul(buf, &endptr, 2);
 #ifdef DEBUG
-    printf("line: %_2u, loading ram: %_4u\n", address, val);
+    printf("line: %2u, loading ram: %4u\n", address, val);
 #endif
     if (buf == endptr)
     {
@@ -112,7 +133,7 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
 #ifdef DEBUG
 void cpu_print_state(struct cpu *cpu)
 {
-  printf("\ncpu->pc: 0x%02x op: %_3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
+  printf("\ncpu->pc: 0x%02x op: %3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
   for (int i = 0; i < 8; i++)
   {
     printf("%3u ", cpu->reg[i]);
@@ -129,7 +150,7 @@ void cpu_run(struct cpu *cpu)
   int running = 1; // True until we get a HLT instruction
   unsigned char current_instruction;
   // unsigned char reg_0, reg_1, reg_2;
-  unsigned char val;
+  // unsigned char val;
   unsigned int num_err = 0;
 
   while (running)
@@ -149,11 +170,12 @@ void cpu_run(struct cpu *cpu)
     // 1. Get the value of the current instruction (in address PC).
     current_instruction = cpu_ram_read(cpu, cpu->pc++);
     // 2. Figure out how many operands this next instruction requires
-    // unsigned int num_ops = current_instruction >> 6;
+    unsigned int num_ops = current_instruction >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
     // 4. switch() over it to decide on a course of action.
     switch (current_instruction)
     {
+    // 5. Do whatever the instruction should do according to the spec.
     case HLT:
       handle_HLT(&running);
       break;
@@ -166,18 +188,30 @@ void cpu_run(struct cpu *cpu)
       handle_LDI(cpu);
       break;
 
+    case CALL:
+      handle_CALL(cpu);
+      break;
+    
+    case RET:
+      handle_RET(cpu);
+      break;
+
     case MUL:
       handle_MUL(cpu);
       break;
 
+    case ADD:
+      handle_ADD(cpu);
+
     case POP:
-      val = cpu_pop_stack(cpu);
+      // val = cpu_pop_stack(cpu);
+      handle_POP(cpu);
       // cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), val);
       break;
 
     case PUSH:
       // val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
-      cpu_push_stack(cpu);
+      handle_PUSH(cpu);
       // printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
       break;
 
@@ -187,8 +221,9 @@ void cpu_run(struct cpu *cpu)
       cpu->pc++;
       break;
     }
-    // 5. Do whatever the instruction should do according to the spec.
     // 6. Move the PC to the next instruction.
+    // increment program counter based on instruction
+    cpu->pc += cpu_ram_read(cpu, cpu->pc - 1) >> 6;
     // cpu->pc++;
   }
 }
@@ -201,11 +236,18 @@ void cpu_init(struct cpu *cpu)
   // TODO: Initialize the PC and other special registers
   // cpu->ram;
   cpu->pc = 0;
-  cpu->reg[7] = MEM_SIZE - 12; // this is where the stack pointer is supposed to live
-  cpu->reg[7] = MEM_SIZE - 12; // SP_START;
+  // cpu->reg[7] = MEM_SIZE - 12; // this is where the stack pointer is supposed to live
+  cpu->reg[7] = sizeof(cpu->ram) / sizeof(cpu->ram[0]) - 12; // SP_START;
+  // cpu->sp = &cpu->reg[7]; // reference to stack pointer register address
 }
 
 // helper functions
+unsigned char cpu_ram_pc(struct cpu *cpu)
+{
+  return cpu->ram[cpu->pc];
+}
+
+
 unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index)
 {
   return cpu->ram[ram_index];
@@ -233,16 +275,19 @@ void handle_PRN(struct cpu *cpu)
 #ifdef DEBUG
   printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
   printf("\"");
+  printf("%u", cpu_register_read(cpu,
+                                 cpu_ram_read(cpu, cpu->pc)));
 #endif
+
+#ifndef DEBUG
   printf("%u\n", cpu_register_read(cpu,
                                    cpu_ram_read(cpu, cpu->pc)));
-#ifdef DEBUG
-  printf("\"");
 #endif
-  cpu->pc++;
+#ifdef DEBUG
+  printf("\"\n");
+#endif
 }
-
-void cpu_push_stack(struct cpu *cpu)
+void handle_PUSH(struct cpu *cpu)
 {
 
   unsigned char val;
@@ -251,29 +296,37 @@ void cpu_push_stack(struct cpu *cpu)
 #ifdef DEBUG
   printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
 #endif
+  cpu_push_stack(cpu, val);
 
+}
+
+void cpu_push_stack(struct cpu *cpu, unsigned char value)
+{
   if (cpu->reg[7] >= cpu->PROGRAM_SIZE)
   {
     cpu->reg[7]--; // move to next empty stack location
-    cpu_ram_write(cpu, cpu->reg[7], val);
+    cpu_ram_write(cpu, cpu->reg[7], value);
   }
+}
 
-  cpu->pc += 1;
+
+void handle_POP(struct cpu *cpu)
+{
+  unsigned char popped_value = cpu_pop_stack(cpu);
+  cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), popped_value);
+#ifdef DEBUG
+  printf("popping %u off the stack into register %u\n",
+         popped_value, cpu_ram_read(cpu, cpu->pc));
+#endif
 }
 
 unsigned char cpu_pop_stack(struct cpu *cpu)
 {
   unsigned char popped_value = cpu_ram_read(cpu, cpu->reg[7]);
-  cpu_register_write(cpu, cpu_ram_read(cpu, cpu->pc), popped_value);
-  // checks so we can't pop past the sp start pos
+  // makes sure we can't pop past the sp start pos
   if (cpu->reg[7] <= SP_START)
   {
     cpu->reg[7]++; // move sp to previous value on stack
   }
-#ifdef DEBUG
-  printf("popping %u off the stack into register %u\n", 
-              popped_value, cpu_ram_read(cpu, cpu->pc));
-#endif
-  cpu->pc += 1;
   return popped_value;
 }
