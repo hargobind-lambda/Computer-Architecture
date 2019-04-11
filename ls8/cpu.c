@@ -7,9 +7,11 @@
 void handle_LDI(struct cpu *cpu)
 {
   /* LDI reg int */
+#ifdef DEBUG
   printf("load %u into reg %u\n",
          cpu_ram_read(cpu, cpu->pc + 1),
          cpu_ram_read(cpu, cpu->pc));
+#endif 
 
   cpu_register_write(cpu,
                      cpu_ram_read(cpu, cpu->pc),
@@ -27,7 +29,9 @@ void handle_MUL(struct cpu *cpu)
 void handle_HLT(int *running)
 {
   *running = 0;
+#ifdef DEBUG
   printf("END PROGRAM\n");
+#endif
 }
 
 /**
@@ -54,9 +58,9 @@ void cpu_load(struct cpu *cpu, char *filepath)
     // *ramp = c;
 
     unsigned char val = strtoul(buf, &endptr, 2);
-
+#ifdef DEBUG
     printf("line: %_2u, loading ram: %_4u\n", address, val);
-
+#endif
     if (buf == endptr)
     {
       continue;
@@ -72,10 +76,12 @@ void cpu_load(struct cpu *cpu, char *filepath)
   // keeps track of where the program ends
   cpu->PROGRAM_SIZE = address;
 
+#ifdef DEBUG
   if (ferror(fp))
     puts("I/O error when reading");
   else if (feof(fp))
     puts("End of file reached successfully");
+#endif
 
   fclose(fp);
 }
@@ -89,9 +95,12 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op)
   {
   case ALU_MUL:
+
+#ifdef DEBUG
     printf("multipling %02u and %02u \n",
            cpu_register_read(cpu, regA),
            cpu_register_read(cpu, regA));
+#endif
 
     result = cpu_register_read(cpu, regA) * cpu_register_read(cpu, regB);
     cpu_register_write(cpu, regA, result);
@@ -100,6 +109,7 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   }
 }
 
+#ifdef DEBUG
 void cpu_print_state(struct cpu *cpu)
 {
   printf("\ncpu->pc: 0x%02x op: %_3u, registers: [ ", cpu->pc, cpu->ram[cpu->pc]);
@@ -109,6 +119,7 @@ void cpu_print_state(struct cpu *cpu)
   }
   printf("]\n");
 }
+#endif
 
 /**
  * Run the CPU
@@ -117,8 +128,9 @@ void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
   unsigned char current_instruction;
+  // unsigned char reg_0, reg_1, reg_2;
+  unsigned char val;
   unsigned int num_err = 0;
-  unsigned char reg_0, reg_1, reg_2, val;
 
   while (running)
   {
@@ -126,6 +138,7 @@ void cpu_run(struct cpu *cpu)
 #ifdef DEBUG
     cpu_print_state(cpu);
 #endif
+
     if (num_err > 5)
     {
       printf("too many bad instructions: %u. Ending emulation\n", num_err);
@@ -136,7 +149,7 @@ void cpu_run(struct cpu *cpu)
     // 1. Get the value of the current instruction (in address PC).
     current_instruction = cpu_ram_read(cpu, cpu->pc++);
     // 2. Figure out how many operands this next instruction requires
-    // unsigned int num_ops =
+    // unsigned int num_ops = current_instruction >> 6;
     // 3. Get the appropriate value(s) of the operands following this instruction
     // 4. switch() over it to decide on a course of action.
     switch (current_instruction)
@@ -217,16 +230,28 @@ void cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned char value
 void handle_PRN(struct cpu *cpu)
 {
   // unsigned int value = cpu->ram[cpu->pc++];
+#ifdef DEBUG
   printf("reg: %u ", cpu_ram_read(cpu, cpu->pc));
-  printf("\"%u\"", cpu_register_read(cpu,
-                                     cpu_ram_read(cpu, cpu->pc)));
+  printf("\"");
+#endif
+  printf("%u\n", cpu_register_read(cpu,
+                                   cpu_ram_read(cpu, cpu->pc)));
+#ifdef DEBUG
+  printf("\"");
+#endif
   cpu->pc++;
 }
 
 void cpu_push_stack(struct cpu *cpu)
 {
+
   unsigned char val;
   val = cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc));
+
+#ifdef DEBUG
+  printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
+#endif
+
   if (cpu->reg[7] >= cpu->PROGRAM_SIZE)
   {
     cpu->reg[7]--; // move to next empty stack location
@@ -245,7 +270,10 @@ unsigned char cpu_pop_stack(struct cpu *cpu)
   {
     cpu->reg[7]++; // move sp to previous value on stack
   }
-  printf("popping %u off the stack into register %u\n", popped_value, cpu_ram_read(cpu, cpu->pc));
+#ifdef DEBUG
+  printf("popping %u off the stack into register %u\n", 
+              popped_value, cpu_ram_read(cpu, cpu->pc));
+#endif
   cpu->pc += 1;
   return popped_value;
 }

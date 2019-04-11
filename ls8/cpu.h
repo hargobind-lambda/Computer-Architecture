@@ -3,7 +3,7 @@
 
 // Holds all information about the CPU
 
-#define DEBUG
+// #define DEBUG
 
 // cpu constants
 #define MEM_SIZE 256
@@ -73,23 +73,23 @@ struct cpu {
 // ALU operations
 
 enum alu_op {
-  ALU_ADD,
-  ALU_SUB,
-  ALU_MUL,
-  ALU_DIV,
-  ALU_MOD,
+  ALU_MUL
+  // ALU_ADD,
+  // ALU_SUB,
+  // ALU_DIV,
+  // ALU_MOD,
 
-  ALU_INC,
-  ALU_DEC,
+  // ALU_INC,
+  // ALU_DEC,
 
-  ALU_CMP,
+  // ALU_CMP,
 
-  ALU_AND,
-  ALU_NOT,
-  ALU_OR,
-  ALU_XOR,
-  ALU_SHL,
-  ALU_SHR
+  // ALU_AND,
+  // ALU_NOT,
+  // ALU_OR,
+  // ALU_XOR,
+  // ALU_SHL,
+  // ALU_SHR
 };
 
 // Function declarations
@@ -112,4 +112,15 @@ void          cpu_register_write(struct cpu *cpu, unsigned int reg_i, unsigned c
 unsigned char cpu_pop_stack(struct cpu *cpu) ;
 void          cpu_push_stack(struct cpu *cpu);
 void handle_PRN(struct cpu *cpu);
+
+// building branch tree
+
+// initalize array of pointers to functions that 
+// take in a cpu struct
+// void (*handler_tree[MEM_SIZE])(struct cpu *cpu) = {0};
+
+// handler_tree[PRN] = &handle_PRN;
+
+
+
 #endif
