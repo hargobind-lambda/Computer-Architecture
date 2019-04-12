@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DATA_LEN 6
-
 void handle_LDI(struct cpu *cpu)
 {
   /* LDI reg int */
@@ -25,9 +23,8 @@ void handle_MUL(struct cpu *cpu)
 {
 
 #ifdef DEBUG
-    printf("multipling %02u and %02u \n", cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
+  printf("multipling %02u and %02u \n", cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
 #endif
-
 
   alu(cpu, ALU_MUL, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
   // cpu->pc += cpu_ram_read(cpu, cpu->pc-1) >> 6;
@@ -37,10 +34,8 @@ void handle_ADD(struct cpu *cpu)
 {
 
 #ifdef DEBUG
-    printf("adding %02u and %02u \n", cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
+  printf("adding %02u and %02u \n", cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
 #endif
-
-
 
   alu(cpu, ALU_ADD, cpu_ram_read(cpu, cpu->pc), cpu_ram_read(cpu, cpu->pc + 1));
 }
@@ -56,15 +51,14 @@ void handle_HLT(int *running)
 void handle_CALL(struct cpu *cpu)
 {
   // push return address onto stack
-  cpu_push_stack(cpu, cpu->pc+1);
+  cpu_push_stack(cpu, cpu->pc + 1);
 
-  #ifdef DEBUG
+#ifdef DEBUG
   printf("Calling subroutine at address %u", cpu_register_read(cpu, cpu_ram_read(cpu, cpu->pc)));
-  #endif
+#endif
 
   // move pc to subroutine address
   cpu->pc = cpu_register_read(cpu, cpu_ram_pc(cpu));
-
 }
 
 void handle_RET(struct cpu *cpu)
@@ -73,11 +67,9 @@ void handle_RET(struct cpu *cpu)
   // move pc to return address in stack
   cpu->pc = cpu_pop_stack(cpu);
 
-  #ifdef DEBUG
+#ifdef DEBUG
   printf("Returning to aaddress %3u", cpu->pc);
-  #endif
-
-
+#endif
 }
 /**
  * Load the binary bytes from a .ls8 source file into a RAM array
@@ -140,14 +132,12 @@ void alu(struct cpu *cpu, enum alu_op op, unsigned char regA, unsigned char regB
   switch (op)
   {
   case ALU_MUL:
-    result = cpu_register_read(cpu, regA)
-           * cpu_register_read(cpu, regB);
+    result = cpu_register_read(cpu, regA) * cpu_register_read(cpu, regB);
     cpu_register_write(cpu, regA, result);
     break;
     // TODO: implement more ALU ops
   case ALU_ADD:
-    result = cpu_register_read(cpu, regA)
-           + cpu_register_read(cpu, regB);
+    result = cpu_register_read(cpu, regA) + cpu_register_read(cpu, regB);
     cpu_register_write(cpu, regA, result);
     break;
   }
@@ -171,7 +161,7 @@ void cpu_print_state(struct cpu *cpu)
 void cpu_run(struct cpu *cpu)
 {
   int running = 1; // True until we get a HLT instruction
-  unsigned char current_instruction;
+  unsigned char cur_ins;
   // unsigned char reg_0, reg_1, reg_2;
   // unsigned char val;
   unsigned int num_err = 0;
@@ -191,14 +181,15 @@ void cpu_run(struct cpu *cpu)
 
     // TODO
     // 1. Get the value of the current instruction (in address PC).
-    current_instruction = cpu_ram_read(cpu, cpu->pc++);
+    cur_ins = cpu_ram_read(cpu, cpu->pc++);
     // 2. Figure out how many operands this next instruction requires
-    unsigned int num_ops = current_instruction >> 6;
-
-    unsigned char affects_PC = current_instruction & PC_MASK;
+    unsigned int num_ops = cur_ins >> 6;
+    // unsigned char uses_ALU = cur_ins & ALU_MASK >> 5;
+    unsigned char affects_PC = cur_ins & PC_MASK;
+    // unsigned char op_id = cur_ins & OP_ID_MASK;
     // 3. Get the appropriate value(s) of the operands following this instruction
     // 4. switch() over it to decide on a course of action.
-    switch (current_instruction)
+    switch (cur_ins)
     {
     // 5. Do whatever the instruction should do according to the spec.
     case HLT:
@@ -216,7 +207,7 @@ void cpu_run(struct cpu *cpu)
     case CALL:
       handle_CALL(cpu);
       break;
-    
+
     case RET:
       handle_RET(cpu);
       break;
@@ -242,7 +233,7 @@ void cpu_run(struct cpu *cpu)
       break;
 
     default:
-      printf("Invalid instruction: %u\n", current_instruction);
+      printf("Invalid instruction: %u\n", cur_ins);
       num_err++;
       cpu->pc++;
       break;
@@ -250,7 +241,8 @@ void cpu_run(struct cpu *cpu)
     // 6. Move the PC to the next instruction.
     // increment program counter based on instruction
     // quick fix to get call working
-    if (!affects_PC) {
+    if (!affects_PC)
+    {
       cpu->pc += cpu_ram_read(cpu, cpu->pc - 1) >> 6;
     }
     // cpu->pc++;
@@ -271,11 +263,12 @@ void cpu_init(struct cpu *cpu)
 }
 
 // helper functions
+
+// Returns whatever is in ram at wherever the program counter is.
 unsigned char cpu_ram_pc(struct cpu *cpu)
 {
   return cpu->ram[cpu->pc];
 }
-
 
 unsigned char cpu_ram_read(struct cpu *cpu, unsigned int ram_index)
 {
@@ -326,7 +319,6 @@ void handle_PUSH(struct cpu *cpu)
   printf("pushing %u onto the stack from register %u\n", val, cpu_ram_read(cpu, cpu->pc));
 #endif
   cpu_push_stack(cpu, val);
-
 }
 
 void cpu_push_stack(struct cpu *cpu, unsigned char value)
@@ -337,7 +329,6 @@ void cpu_push_stack(struct cpu *cpu, unsigned char value)
     cpu_ram_write(cpu, cpu->reg[7], value);
   }
 }
-
 
 void handle_POP(struct cpu *cpu)
 {

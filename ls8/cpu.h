@@ -1,9 +1,10 @@
 #ifndef _CPU_H_
 #define _CPU_H_
 
+// #define DEBUG
+
 // Holds all information about the CPU
 
-#define DEBUG
 
 // cpu constants
 #define MEM_SIZE 256
